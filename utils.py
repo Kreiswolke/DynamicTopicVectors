@@ -9,14 +9,10 @@ import codecs
 
 
 def write_topic_files(res, dst, vocabulary, maxtops=10,remove_mean = False, word_model_file = None):
-    
     if word_model_file and isinstance(word_model_file, str):
-        print('Load word model for topics', word_model_file)
         word_model = get_wordmodel(word_model_file)
-        
     elif word_model_file:
         word_model = word_model_file
-        
     else:
         raise
 
@@ -47,36 +43,12 @@ def write_topic_files(res, dst, vocabulary, maxtops=10,remove_mean = False, word
                 
             res_topics[i] = {'words' : W, 'weights' : E}
 
-
             line = ' '.join(W) + '\n'
             print(line)
             f.write(line.encode('utf-8'))
             
     return res_topics
 
-
-def get_label_dict():
-    labels ={0: 'sci.electronics',
-			 1: 'alt.atheism',
-			 2: 'talk.religion.misc',
-			 3: 'talk.politics.guns',
-			 4: 'rec.motorcycles',
-			 5: 'misc.forsale',
-			 6: 'rec.autos',
-			 7: 'comp.os.ms-windows.misc',
-			 8: 'rec.sport.hockey',
-			 9: 'sci.med',
-			 10: 'comp.graphics',
-			 11: 'sci.space',
-			 12: 'talk.politics.mideast',
-			 13: 'talk.politics.misc',
-			 14: 'rec.sport.baseball',
-			 15: 'comp.sys.ibm.pc.hardware',
-			 16: 'comp.sys.mac.hardware',
-			 17: 'sci.crypt',
-			 18: 'soc.religion.christian',
-			 19: 'comp.windows.x'}
-    return labels
 
 def read_vocab_dict(vocab_url):
     fin = open(vocab_url, 'rb')
@@ -112,8 +84,7 @@ def download_file(url, target):
                 progress_bar.update(32*1024)
 
 
-def get_wordmodel(wordmodel_file = '../wordmodel/GloVe/glove2word2vec300d.txt'):
-    print(wordmodel_file)
+def get_wordmodel(wordmodel_file):
     if wordmodel_file.endswith('txt'):
         model = gensim.models.KeyedVectors.load_word2vec_format(wordmodel_file)
     elif wordmodel_file.endswith('bin'): 
@@ -125,32 +96,24 @@ def get_wordmodel(wordmodel_file = '../wordmodel/GloVe/glove2word2vec300d.txt'):
     return model
 
 
-def get_data(case, root_dir='.../topics/data/', valid_dict=True):
-  
+def get_data(case, root_dir, valid_dict=True):
+ 
+    doc_dict_train = pickle.load(open(os.path.join(root_dir, case, 'proc', 'train_doc_dict.p'),'rb'))
 
-    doc_dict_train = pickle.load(open(os.path.join(root_dir,case, 'proc', 'train_doc_dict.p'),'rb'))
-
-    try:
-        doc_dict_test = pickle.load(open(os.path.join(root_dir, case, 'proc','testsplit_doc_dict.p'),'rb'))
-    except FileNotFoundError:
-        print('FileNotFoundError: testsplit_doc_dict.p, using test_doc_dict.p instead!')
-        doc_dict_test = pickle.load(open(os.path.join(root_dir, case, 'proc','test_doc_dict.p'),'rb'))
-
+    doc_dict_test = pickle.load(open(os.path.join(root_dir, case, 'proc','testsplit_doc_dict.p'),'rb'))
+   
     try:
         vocab =  pickle.load(open(os.path.join(root_dir, case, 'proc_onehot','vocab.pkl'),'rb'))
     except: 
         vocab = None
 
     if valid_dict==True:    
-        try:
-            doc_dict_valid = pickle.load(open(os.path.join(root_dir, case, 'proc','valid_doc_dict.p'),'rb'))
-        except FileNotFoundError:
-            print('FileNotFoundError: valid_doc_dict.p, using test_doc_dict.p copy!')
-            doc_dict_valid = doc_dict_test.copy()
-            
+
+        doc_dict_valid = pickle.load(open(os.path.join(root_dir, case, 'proc','valid_doc_dict.p'),'rb'))
+
         return doc_dict_train, doc_dict_test, doc_dict_valid, vocab
     else:
-        return doc_dict_train, doc_dict_test, vocab, 
+        return doc_dict_train, doc_dict_test, vocab
     
 
 class InitMyCorpus(object):
@@ -164,7 +127,9 @@ class MyCorpus(gensim.corpora.TextCorpus):
         for k,v in self.input.items():     
             yield v['words']
             
-           
+def get_weights(dir_):
+    W0 = pickle.load(open(dir_,'rb'))['topics']
+    return W0
 
 
 
